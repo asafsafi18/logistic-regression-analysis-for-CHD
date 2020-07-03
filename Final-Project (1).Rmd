@@ -1,0 +1,498 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+---
+title: 'Final Project 
+Course : DSC520
+author: "Achraf Safsafi"
+
+
+According to the Centers for Disease Control and Prevention(CDC), heart disease is the major cause of death in the United States. Around 647,000 Americans die from heart disease each year. In 2017, 365,914 people died because of coronary heart disease ( CHD) only. CHD is considered as the most common type of heart disease.
+
+therefore, the project goal is to identify the factor risks of coronary heart disease so it can help reduce those rates using a logistic regression algorithm. The dataset used in this project is from the Framingham Heart study dataset. It is an ongoing heart study on residents of the town of Framingham, Massachusetts published on the Kagle website, https://www.kaggle.com/amanajmera1/framingham-heart-study-dataset/data.
+The dataset contains 4238 observations of 16 variables, which are described below.
+
+
+male : 0 = Female; 1 = Male
+
+age  : Age at exam time
+
+education :1 = Some High School; 2 = High School or GED; 3 = Some College or Vocational School; 4 = college
+              
+currentSmoker:0 = nonsmoker; 1 = smoker
+
+cigsPerDay:number of cigarettes smoked per day
+
+BPMeds: 0 = not on Blood Pressure medications; 1 = Is on Blood Pressure medications
+
+prevalentStroke : 0= no Prevalent Stroke , 1 = Prevalent Stroke
+
+prevalentHyp :0 = no prevalent hypertension , 1 = has prevalent hypertension
+
+diabetes :  0 = no diabetes ; 1 = has diabetes
+
+totChol: total cholesterol level (mg/dL)
+
+sysBP :systolic blood pressure (mmHg)
+
+dia BP:diastolic blood pressure (mmHg)
+
+BMI :Body Mass Index calculated as: Weight (kg) / Height(meter-squared)
+
+heartRate :Heart Rate
+
+glucose :glucose level (mg/dL)
+
+TenYearCHD :10 year risk of coronary heart disease CHD1 = yes0 = no
+
+
+The research questions that focus on the problem statement are cited below.
+
+What is the leading medical history risk factor for coronary heart disease?
+What is the leading medical current risk factor for coronary heart disease?
+how strong is the evidence linking smoking consumption to coronary heart disease?
+What gender is most likely to have coronary heart disease?
+How does age affect the risk of coronary heart disease?
+What are the major risk factors, including demographic, behavioral, and medical, for coronary heart disease?
+
+
+
+
+
+```{r}
+##Understanding the structure of the data
+# set working directory
+path_loc <- "C:/Users/asafs/Desktop/DSC520-final project"
+setwd(path_loc)
+```
+
+
+
+
+
+```{r}
+# reading in the data
+mydata <- read.csv("FraminghamHeartstudydataset.csv")
+
+```
+
+
+
+
+
+```{r}
+#view the dimensions and the class of the dataset
+class(mydata)
+dim(mydata)
+```
+
+
+
+
+```{r}
+library(tidyverse)
+#look at the variable names and types
+glimpse(mydata)
+```
+
+
+
+
+
+```{r}
+#summary of the data
+summary(mydata)
+```
+
+
+
+
+```{r}
+# Looking at and visualizing data
+head(mydata)
+```
+
+
+
+
+
+```{r}
+tail(mydata)
+```
+
+
+
+
+```{r}
+##visualizing the data
+# categorical variables
+# Basic barplot:
+par(mfrow=c(2,2))
+barplot(table(mydata$male), main="Sex")
+barplot(table(mydata$education), main="Education")
+barplot(table(mydata$currentSmoker), main="Current Smoker")
+barplot(table(mydata$BPMeds), main="Blood Pressure Medications")
+barplot(table(mydata$prevalentStroke), main="Prevalent Stroke")
+barplot(table(mydata$prevalentHyp), main="Prevalent Hypertension")
+barplot(table(mydata$diabetes), main="Diabetes")
+barplot(table(mydata$TenYearCHD), main="10 Year Risk of Coronary Heart Disease CHD")
+
+```
+
+
+
+
+```{r}
+##visualizing the data
+#numerical variables
+library(gridExtra)
+
+plot1 <- ggplot(mydata, aes(x=age)) +
+  geom_histogram(binwidth= 0.5,aes(y = ..density..))+
+  labs(title="Age at Exam Time")+geom_density(col="red")
+
+plot2<- ggplot(mydata, aes(x=cigsPerDay)) +
+  geom_histogram(binwidth= 3,aes(y = ..density..))+
+  labs(title="Number of Cigarettes Smoked per Day")+geom_density(col="red")
+
+plot3<- ggplot(mydata, aes(x=totChol)) +
+  geom_histogram(binwidth= 1,aes(y = ..density..))+
+  labs(title="Total Cholesterol Level (mg/dL)")+geom_density(col="red")
+
+plot4<- ggplot(mydata, aes(x=sysBP)) +
+  geom_histogram(binwidth= 1,aes(y = ..density..))+
+  labs(title="Systolic Blood Pressure (mmHg)")+geom_density(col="red")
+grid.arrange(plot1, plot2,plot3,plot4 ,ncol=2, nrow = 2)
+plot5<-ggplot(mydata, aes(x=diaBP)) +
+  geom_histogram(binwidth= 1,aes(y = ..density..))+
+  labs(title="Diastolic Blood Pressure (mmHg)")+geom_density(col="red")
+
+plot6<- ggplot(mydata, aes(x=BMI)) +
+  geom_histogram(binwidth= 0.1,aes(y = ..density..))+
+  labs(title="Body Mass Index")+geom_density(col="red")
+
+plot7 <- ggplot(mydata, aes(x=heartRate)) +
+  geom_histogram(binwidth= 1,aes(y = ..density..))+
+  labs(title="Heart Rate")+geom_density(col="red")
+
+plot8 <- ggplot(mydata, aes(x=glucose)) +
+  geom_histogram(binwidth= 1,aes(y = ..density..))+
+  labs(title="Glucose Level (mg/dL)")+geom_density(col="red")
+grid.arrange(plot5, plot6,plot7,plot8 ,ncol=2, nrow = 2)
+
+```
+
+
+
+
+
+**Finding and replacing missing values**
+
+when we run summary function, we see that there are some columns have missing values :
+(education , 105 NA's)
+(cigsPerDay , 29 NA's)
+(BPMeds , 53 NA's)
+(totChol, 50 NA's)
+(BMI , 19 NA's)
+(heartRate , 1 NA's )
+(glucose, 388 NA's)
+
+We will use Mean  value for missing values replacement.However, if there are many outliers,we will use Median value,and Mode value for categorical variables.
+
+
+```{r}
+# Replacing missing values
+names(table(mydata$education))[table(mydata$education)==max(table(mydata$education))]
+Mode <- 1
+mydata$education=ifelse(is.na(mydata$education),Mode,mydata$education)
+mydata$cigsPerDay=ifelse(is.na(mydata$cigsPerDay),median(mydata$cigsPerDay,na.rm=T),mydata$cigsPerDay)
+mydata$BPMeds=ifelse(is.na(mydata$BPMeds),median(mydata$BPMeds,na.rm=T),mydata$BPMeds)
+mydata$totChol=ifelse(is.na(mydata$totChol),median(mydata$totChol,na.rm=T),mydata$totChol)
+mydata$BMI=ifelse(is.na(mydata$BMI),mean(mydata$BMI,na.rm=T),mydata$BMI)
+mydata$heartRate=ifelse(is.na(mydata$heartRate),mean(mydata$heartRate,na.rm=T),mydata$heartRate)
+mydata$glucose=ifelse(is.na(mydata$glucose),median(mydata$glucose,na.rm=T),mydata$glucose)
+summary(mydata)
+head(mydata)
+
+tail(mydata)
+```
+
+
+
+
+**Detect multicollinearity**
+```{r}
+# Computing Variance Inflation Factor VIF
+library(usdm)
+vif(mydata)
+```
+
+
+
+The results above shows that there is no collinearity ,all variables are moderately correlated. All values of VIF  below 5.
+
+
+
+
+```{r}
+##splitting the data set into training(80%) and testing(20%)data set
+set.seed(123)
+training <- sample(1:nrow(mydata),size=nrow(mydata)*0.8,replace = FALSE)
+train.mydata <- mydata[training,] 
+test.mydata <- mydata[-training,] 
+head(test.mydata)
+```
+
+
+
+
+```{r}
+# building model
+glm_model <- glm(TenYearCHD ~ ., data = train.mydata, family=binomial)
+summary(glm_model)
+```
+
+According to the results above the variables,male,age,cigsPerDay,BPMeds,sysBP , and glucose are connecting in a  statistically way to the dependent variable,TenYearCHD .
+
+
+```{r}
+# Accuracy
+predictTrain <- predict(glm_model,newdata= test.mydata,type="response")
+Table <- table(test.mydata$TenYearCHD,predictTrain>0.5)
+Table
+Accuracy <- sum(diag(Table))/sum(Table)
+Accuracy
+```
+As the accuracy more than 80 % ,The model is not bad
+
+
+let's rank the variables according to their importance.
+
+
+```{r}
+library(caret)
+# ranking  the variables according to importance
+imp <- as.data.frame(varImp(glm_model, scale = FALSE))
+imp <- data.frame(overall = imp$Overall,
+           names   = rownames(imp))
+
+imp[order(imp$overall,decreasing = T),]
+```
+
+
+
+According to the results abovw,we will remove the variables that less important and we keep only the importance ones
+.
+
+```{r}
+# create new dataframe
+library(dplyr)
+important <- select(mydata,male,age,sysBP,cigsPerDay,glucose,BPMeds,TenYearCHD)
+head(important)
+```
+
+
+
+```{r}
+##splitting the data set into training(80%) and testing(20%)data set
+set.seed(123)
+training1 <- sample(1:nrow(important),size=nrow(important)*0.8,replace = FALSE)
+train.important <- important[training1,] 
+test.important <- important[-training1,] 
+dim(test.important)
+head(test.important)
+
+```
+
+
+
+
+```{r}
+# building a new model
+glm_model1 <- glm(TenYearCHD ~ ., data = train.important, family=binomial)
+summary(glm_model1)
+exp(coef(summary(glm_model1)))
+# Accuracy
+predictTrain1 <- predict(glm_model1,newdata= test.important,type="response")
+Table1 <- table(test.important$TenYearCHD,predictTrain1 >0.5)
+Table1
+Accuracy1 <- sum(diag(Table1))/sum(Table1)
+Accuracy1
+
+```
+
+The accuracy increases negligibly.
+
+the next model will remove BPMeds variable and we will check the new accuracy.
+
+
+```{r}
+# building a new model
+glm_model2 <- glm(TenYearCHD ~ .-BPMeds, data = train.important, family=binomial)
+summary(glm_model2)
+
+# Accuracy
+predictTrain2 <- predict(glm_model2,newdata= test.important,type="response")
+Table2 <- table(test.important$TenYearCHD,predictTrain2 >0.5)
+Table2
+Accuracy2 <- sum(diag(Table2))/sum(Table2)
+Accuracy2
+```
+
+
+The accuracy increases slightly.
+
+the next model will remove the predictor,glucose, and we will check the new model accuracy.
+
+
+
+```{r}
+# building new model
+glm_model3 <- glm(TenYearCHD ~ .-BPMeds-glucose, data = train.important, family=binomial)
+summary(glm_model3)
+
+# Accuracy
+predictTrain3 <- predict(glm_model3,newdata= test.important,type="response")
+Table3 <- table(test.important$TenYearCHD,predictTrain3 >0.5)
+Table3
+Accuracy3 <- sum(diag(Table3))/sum(Table3)
+Accuracy3
+```
+the model accuracy slightly decreases
+
+Removing the predictor, glucose, affects the model accuracy, So the next model will keep the predictor, glucose, and we remove the predictor, cigsPerDay.Then we check the new model accuracy.
+
+
+
+```{r}
+# building new model
+glm_model4 <- glm(TenYearCHD ~ .-BPMeds-cigsPerDay , data = train.important, family=binomial)
+summary(glm_model4)
+
+# Accuracy
+predictTrain4 <- predict(glm_model4,newdata= test.important,type="response")
+Table4 <- table(test.important$TenYearCHD,predictTrain4 >0.5)
+Table4
+Accuracy4 <- sum(diag(Table4))/sum(Table4)
+Accuracy4
+```
+
+
+The model accuracy has little improvement.
+the next model will remove the predictor,sysBP, and we will check the new model accuracy.
+
+
+```{r}
+# building new model
+glm_model5 <- glm(TenYearCHD ~ .-BPMeds-cigsPerDay-sysBP  , data = train.important, family=binomial)
+summary(glm_model5)
+
+# Accuracy
+predictTrain5 <- predict(glm_model5,newdata= test.important,type="response")
+Table5 <- table(test.important$TenYearCHD,predictTrain5 >0.5)
+Table5
+Accuracy5 <- sum(diag(Table5))/sum(Table5)
+Accuracy5
+```
+
+
+The model accuracy has little improvement.
+the next model will remove the predictor,age, and we will check the new model accuracy.
+
+
+```{r}
+# building new model
+glm_model6 <- glm(TenYearCHD ~ male + glucose , data = train.important, family=binomial)
+summary(glm_model6)
+
+# Accuracy
+predictTrain6 <- predict(glm_model6,newdata= test.important,type="response")
+Table6 <- table(test.important$TenYearCHD,predictTrain6 >0.5)
+Table6
+Accuracy6 <- sum(diag(Table6))/sum(Table6)
+Accuracy6
+```
+
+
+the model accuracy slightly decreases
+Removing the predictor,age, affects the model accuracy, So the next model will keep the predictor,age, and we remove the predictor,male.Then we check the new model accuracy.
+
+
+
+```{r}
+# building new model
+glm_model7 <- glm(TenYearCHD ~ age + glucose   , data = train.important, family=binomial)
+summary(glm_model7)
+
+# Accuracy
+predictTrain7 <- predict(glm_model7,newdata= test.important,type="response")
+Table7 <- table(test.important$TenYearCHD,predictTrain7 >0.5)
+Table7
+Accuracy7 <- sum(diag(Table7))/sum(Table7)
+Accuracy7
+
+```
+
+
+
+```{r}
+# building new model
+glm_model8 <- glm(TenYearCHD ~ glucose  , data = train.important, family=binomial)
+summary(glm_model8)
+
+# Accuracy
+predictTrain8 <- predict(glm_model8,newdata= test.important,type="response")
+Table8 <- table(test.important$TenYearCHD,predictTrain8 >0.5)
+Table8
+Accuracy8 <- sum(diag(Table8))/sum(Table8)
+Accuracy8
+```
+
+
+the model accuracy slightly decreases
+we will run The next model only with the predictor ,age.
+
+
+```{r}
+# building new model
+glm_model9 <- glm(TenYearCHD ~ age  , data = train.important, family=binomial)
+summary(glm_model9)
+
+# Accuracy
+predictTrain9 <- predict(glm_model9,newdata= test.important,type="response")
+Table9 <- table(test.important$TenYearCHD,predictTrain9 >0.5)
+Table9
+Accuracy9 <- sum(diag(Table9))/sum(Table9)
+Accuracy9
+```
+
+
+we got same result as glm_model7 (~ age + glucose) model.
+
+
+
+```{r}
+# contingency table
+table(train.important$male,train.important$TenYearCHD)
+
+```
+
+
+```{r}
+#male odds ratio
+OR <- (1690/1191)*(269/240)
+OR
+```
+
+Men likely have a higher risk to develop coronary heart disease than women.
+
+
+
+**Conclusion :**
+
+blood pressure and having stroke are considered the most medical history risk factors for coronary heart disease. However, glucose level, systolic blood pressure, and total cholesterol level are the leading medical current risk factors. the number of cigarettes that the person smoked on average in one day can be a strong predictor for being experienced CHD. And the age remains the major risk factor for coronary heart disease where the men are more likely to experience a CHD more than women.
+
+
+
